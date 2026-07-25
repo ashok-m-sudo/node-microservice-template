@@ -54,8 +54,11 @@ process.on('SIGTERM', () => {
   });
 });
 
-const server = app.listen(PORT, () => {
-  logger.info(`Auth service running on port ${PORT}`);
-});
+let server;
+if (require.main === module) {
+  server = app.listen(PORT, () => {
+    logger.info(`Auth service running on port ${PORT}`);
+  });
+}
 
 module.exports = app;

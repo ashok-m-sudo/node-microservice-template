@@ -1,0 +1,90 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_REGISTRY = 'docker.io'
+        IMAGE_NAME = 'auth-service'
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
+        KUBECONFIG = credentials('kubeconfig')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                dir('auth-service') {
+                    sh 'npm ci'
+                }
+            }
+        }
+
+        stage('Lint') {
+            steps {
+                dir('auth-service') {
+                    sh 'npm run lint'
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                dir('auth-service') {
+                    sh 'npm test'
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                dir('auth-service') {
+                    script {
+                        docker.build("${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}")
+                        docker.build("${DOCKER_REGISTRY}/${IMAGE_NAME}:latest")
+                    }
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    docker.withRegistry("https://${DOCKER_REGISTRY}", 'docker-credentials') {
+                        docker.image("${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}").push()
+                        docker.image("${DOCKER_REGISTRY}/${IMAGE_NAME}:latest").push()
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                dir('auth-service') {
+                    sh """
+                        kubectl set image deployment/auth-service \
+                        auth-service=${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} \
+                        --record
+
+                        kubectl rollout status deployment/auth-service
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline succeeded!'
+        }
+        failure {
+            echo 'Pipeline failed!'
+        }
+        always {
+            cleanWs()
+        }
+    }
+}

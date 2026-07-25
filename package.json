@@ -1,0 +1,28 @@
+{
+  "name": "node-microservice-template",
+  "version": "1.0.0",
+  "description": "Node.js microservices template for DevOps showcase",
+  "scripts": {
+    "install:all": "cd api-gateway && npm install && cd ../auth-service && npm install && cd ../backend-service && npm install",
+    "dev:all": "concurrently \"cd api-gateway && npm run dev\" \"cd auth-service && npm run dev\" \"cd backend-service && npm run dev\"",
+    "test:all": "cd api-gateway && npm test && cd ../auth-service && npm test && cd ../backend-service && npm test",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "k8s:deploy": "kubectl apply -f k8s/",
+    "k8s:delete": "kubectl delete -f k8s/"
+  },
+  "keywords": [
+    "microservices",
+    "nodejs",
+    "docker",
+    "kubernetes",
+    "devops",
+    "jenkins"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
